@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D Saing - Your Trusted Shopping Platform</title>
+
+    <!-- ✅ Manifest (root မှာ) -->
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- ✅ Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+
+    <!-- ✅ Theme Color -->
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="D Saing">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+        .install-btn {
+            display: none;
+            margin-top: 30px;
+            padding: 12px 30px;
+            background: #fff;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛍️ D Saing</h1>
+        <p>Your Trusted Shopping Platform</p>
+        <button id="installBtn" class="install-btn">📲 Install App</button>
+    </div>
+
+    <script>
+        // ✅ Service Worker (root မှာ)
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", function () {
+                navigator.serviceWorker
+                    .register("/sw.js")
+                    .then(function (registration) {
+                        console.log("✅ Service Worker registered:", registration);
+                    })
+                    .catch(function (error) {
+                        console.log("❌ Service Worker registration failed:", error);
+                    });
+            });
+        }
+
+        // Install Button
+        let deferredPrompt;
+        window.addEventListener("beforeinstallprompt", (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById("installBtn").style.display = "inline-block";
+        });
+
+        document.getElementById("installBtn").addEventListener("click", () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((result) => {
+                    if (result.outcome === "accepted") {
+                        console.log("✅ App installed!");
+                    }
+                    deferredPrompt = null;
+                    document.getElementById("installBtn").style.display = "none";
+                });
+            }
+        });
+
+        window.addEventListener("appinstalled", () => {
+            console.log("🎉 PWA installed!");
+            document.getElementById("installBtn").style.display = "none";
+        });
+    </script>
+</body>
+</html>
