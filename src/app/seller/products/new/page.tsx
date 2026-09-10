@@ -110,7 +110,7 @@ export default function AddProduct() {
         title: productName,
         price: productPrice,
         discount: productDiscount || '',
-        customDiscount: productCustomDiscount || '', // ✅ ဒီမှာ customDiscount ထည့်ပေးတယ်
+        customDiscount: productCustomDiscount || '', 
         image: productImage || 'https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?q=80&w=600&h=800&auto=format&fit=crop',
         cta: 'Contact Seller',
         category: productCategory,
@@ -118,7 +118,8 @@ export default function AddProduct() {
         sellerId: user.uid,
         sellerName: userData?.username || userData?.displayName || 'Seller',
         createdAt: serverTimestamp(),
-        stock: parseInt(productStock) || 0
+        stock: parseInt(productStock) || 0,
+        isApproved: false // 👈 Admin က အတည်ပြုမှသာ ပလက်ဖောင်းပေါ်တွင် ပြသမည့် အပိုင်း
       };
 
       console.log('📦 Adding product:', productData);

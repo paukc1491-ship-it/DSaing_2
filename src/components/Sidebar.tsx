@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, User, ShoppingBag, Settings, HelpCircle, LogOut, UserPlus, LogIn, Camera, MessageCircle, Store, ShoppingCart } from "lucide-react";
+import { X, User, ShoppingBag, Settings, HelpCircle, LogOut, UserPlus, LogIn, Camera, MessageCircle, Store, ShoppingCart, ShieldCheck } from "lucide-react";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { auth, db } from '@/lib/firebase';
@@ -13,7 +13,7 @@ interface SidebarProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (value: boolean) => void;
   user?: any;
-  userRole?: 'user' | 'seller' | null;
+  userRole?: 'user' | 'seller' | 'admin' | string | null;
 }
 
 export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, user, userRole }: SidebarProps) {
@@ -21,7 +21,7 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, user, userRol
   const [username, setUsername] = useState<string>('');
   const [photoURL, setPhotoURL] = useState<string | null>(null);
   const [language, setLanguage] = useState<string>('en');
-  const [currentRole, setCurrentRole] = useState<'user' | 'seller' | null>(userRole || null);
+  const [currentRole, setCurrentRole] = useState<string | null>(userRole || null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -77,6 +77,7 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, user, userRol
         'sidebar.addBuyer': 'ဝယ်ယူသူအကောင့်ဖွင့်မည်',
         'sidebar.addSeller': 'ရောင်းချသူအကောင့်ဖွင့်မည်',
         'sidebar.sellNow': 'ရောင်းမည်',
+        'sidebar.manageBanners': 'ဘန်နာများ စီမံရန်',
       },
       en: {
         'sidebar.seller': 'Seller',
@@ -94,6 +95,7 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, user, userRol
         'sidebar.addBuyer': 'Create Buyer Account',
         'sidebar.addSeller': 'Create Seller Account',
         'sidebar.sellNow': 'Sell Now',
+        'sidebar.manageBanners': 'Manage Banners',
       }
     };
     return translations[language]?.[key] || translations.en[key] || key;
@@ -102,11 +104,13 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, user, userRol
   const getRoleLabel = () => {
     if (currentRole === 'seller') return '🛒 ' + t('sidebar.seller');
     if (currentRole === 'user') return '👤 ' + t('sidebar.buyer');
+    if (currentRole === 'admin') return '🛡️ Admin';
     return t('sidebar.guest');
   };
 
   const getRoleColor = () => {
     if (currentRole === 'seller') return '#FFD700';
+    if (currentRole === 'admin') return '#FF4500';
     if (currentRole === 'user') return 'var(--accent)';
     return 'var(--text-muted)';
   };
@@ -274,14 +278,6 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, user, userRol
                       gap: "8px",
                       transition: "all 0.3s ease"
                     }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "var(--accent)";
-                      e.currentTarget.style.color = "#000000";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "var(--background)";
-                      e.currentTarget.style.color = "var(--accent)";
-                    }}
                   >
                     <ShoppingCart size={16} />
                     {t('sidebar.addBuyer')}
@@ -307,14 +303,6 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, user, userRol
                       justifyContent: "center",
                       gap: "8px",
                       transition: "all 0.3s ease"
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "#FFD700";
-                      e.currentTarget.style.color = "#000000";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "var(--background)";
-                      e.currentTarget.style.color = "#FFD700";
                     }}
                   >
                     <Store size={16} />
@@ -394,6 +382,35 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, user, userRol
                     <span style={{ fontSize: "18px" }}>💬</span>
                     <span>{t('Messages')}</span>
                   </Link>
+
+                  {/* 👇 Admin များအတွက်သာ ပေါ်မည့် Banner စီမံခန့်ခွဲရန် ခလုတ် (currentRole ကို စစ်ဆေးရန်) */}
+                  {currentRole === 'admin' && (
+                    <button
+                      onClick={() => {
+                        setIsSidebarOpen(false);
+                        router.push('/admin/banners');
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        padding: "8px 12px",
+                        backgroundColor: "var(--accent)",
+                        border: "none",
+                        borderRadius: "8px",
+                        color: "#000000",
+                        textDecoration: "none",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                        width: "100%",
+                        marginTop: "4px"
+                      }}
+                    >
+                      <ShieldCheck size={18} />
+                      <span>{t('sidebar.manageBanners')}</span>
+                    </button>
+                  )}
                 </div>
               </>
             ) : (

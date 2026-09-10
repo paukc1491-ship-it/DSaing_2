@@ -5,7 +5,7 @@ Digital Shop
 DSAING/
 .
 [4.0K]  .
-├── [3.8K]  README.md
+├── [3.9K]  README.md
 ├── [ 114]  cors.json
 ├── [4.0K]  dataconnect
 │   ├── [ 456]  dataconnect.yaml
@@ -40,7 +40,7 @@ DSAING/
 ├── [4.0K]  src
 │   ├── [4.0K]  app
 │   │   ├── [3.1K]  globals.css
-│   │   ├── [5.6K]  layout.tsx
+│   │   ├── [6.6K]  layout.tsx
 │   │   └── [ 17K]  page.tsx
 │   ├── [4.0K]  components
 │   │   ├── [5.5K]  BannerSlider.tsx
@@ -48,21 +48,23 @@ DSAING/
 │   │   ├── [ 13K]  CategoryAds.tsx
 │   │   ├── [8.7K]  ChatList.tsx
 │   │   ├── [ 12K]  ChatModal.tsx
-│   │   ├── [ 76K]  ChatRoom.tsx
+│   │   ├── [ 84K]  ChatRoom.tsx
 │   │   ├── [1.5K]  EmojiButton.tsx
 │   │   ├── [1.6K]  EmojiPicker.tsx
 │   │   ├── [9.9K]  Header.tsx
 │   │   ├── [ 18K]  LanguageProvider.tsx
 │   │   ├── [6.3K]  LocationModal.tsx
-│   │   ├── [ 23K]  MessageBubble.tsx
+│   │   ├── [ 28K]  MessageBubble.tsx
 │   │   ├── [2.4K]  NotificationProvider.tsx
 │   │   ├── [4.8K]  NotificationToggle.tsx
-│   │   ├── [ 17K]  ProductDetailModal.tsx
+│   │   ├── [ 15K]  PaymentSubmission.tsx
+│   │   ├── [7.1K]  ProductAnalyticsModal.tsx
+│   │   ├── [ 18K]  ProductDetailModal.tsx
 │   │   ├── [7.5K]  ReviewForm.tsx
 │   │   ├── [5.4K]  ReviewsList.tsx
 │   │   ├── [5.5K]  SearchResults.tsx
 │   │   ├── [4.1K]  SessionLockModal.tsx
-│   │   ├── [ 19K]  Sidebar.tsx
+│   │   ├── [ 20K]  Sidebar.tsx
 │   │   ├── [4.0K]  SplashScreen.tsx
 │   │   ├── [3.5K]  StarRating.tsx
 │   │   ├── [1007]  ThemeProvider.tsx
@@ -71,7 +73,7 @@ DSAING/
 │   ├── [4.0K]  context
 │   │   ├── [2.6K]  SessionContext.tsx
 │   │   ├── [1.8K]  ThemeContext.tsx
-│   │   └── [2.8K]  WishlistContext.tsx
+│   │   └── [3.7K]  WishlistContext.tsx
 │   ├── [4.0K]  data
 │   │   ├── [5.8K]  Ads.ts
 │   │   ├── [3.9K]  banners.ts
@@ -97,8 +99,8 @@ DSAING/
 │   ├── [4.0K]  styles
 │   │   └── [ 365]  menuButtonStyle.ts
 │   └── [4.0K]  types
-│       └── [3.1K]  index.ts
+│       └── [3.5K]  index.ts
 ├── [ 735]  tsconfig.json
-└── [137K]  tsconfig.tsbuildinfo
+└── [148K]  tsconfig.tsbuildinfo
 
-18 directories, 78 files
+18 directories, 80 files

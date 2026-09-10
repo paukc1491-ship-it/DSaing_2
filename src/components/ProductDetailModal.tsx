@@ -1,7 +1,7 @@
 // components/ProductDetailModal.tsx
 'use client';
 
-import { X, MapPin, MessageCircle, Phone, Heart, Star } from "lucide-react";
+import { X, MapPin, MessageCircle, Phone, Heart, Store } from "lucide-react";
 import { useState, useEffect, useRef } from 'react';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -34,6 +34,7 @@ export default function ProductDetailModal({
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [sellerPhone, setSellerPhone] = useState<string>('');
+  const [shopName, setShopName] = useState<string>('');
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [product, setProduct] = useState(initialProduct);
   const { language } = useLanguage();
@@ -129,7 +130,7 @@ export default function ProductDetailModal({
   };
 
   useEffect(() => {
-    const fetchSellerPhone = async () => {
+    const fetchSellerInfo = async () => {
       if (product?.sellerId) {
         try {
           const sellerRef = doc(db, 'users', product.sellerId);
@@ -137,13 +138,14 @@ export default function ProductDetailModal({
           if (sellerSnap.exists()) {
             const sellerData = sellerSnap.data();
             setSellerPhone(sellerData.phone || sellerData.shopPhone || '');
+            setShopName(sellerData.displayName || sellerData.shopName || sellerData.username || '');
           }
         } catch (error) {
-          console.error('Error fetching seller phone:', error);
+          console.error('Error fetching seller info:', error);
         }
       }
     };
-    fetchSellerPhone();
+    fetchSellerInfo();
   }, [product?.sellerId]);
 
   const handleChatNow = async () => {
@@ -213,10 +215,12 @@ export default function ProductDetailModal({
         zIndex: 100,
         display: "flex",
         flexDirection: "column",
-        animation: "fadeIn 0.3s ease"
+        animation: "fadeIn 0.3s ease",
+        overflow: "hidden"
       }}
       onClick={handleOutsideClick}
     >
+      {/* Top Floating Controls */}
       <button
         style={{
           position: "absolute",
@@ -239,12 +243,11 @@ export default function ProductDetailModal({
         <X size={24} />
       </button>
 
-      {/* ✅ Discount Type Badge (Placed right below Close Button) */}
       {hasDiscount && (
         <div
           style={{
             position: "absolute",
-            top: "66px",
+            top: "70px",
             right: "16px",
             backgroundColor: "var(--error)",
             color: "#ffffff",
@@ -275,7 +278,7 @@ export default function ProductDetailModal({
           }}
           style={{
             position: "absolute",
-            top: "66px",
+            top: "120px",
             right: "16px",
             zIndex: 10,
             display: "flex",
@@ -287,7 +290,7 @@ export default function ProductDetailModal({
             backgroundColor: "rgba(0,0,0,0.5)",
             backdropFilter: "blur(4px)",
             border: "1px solid rgba(255,255,255,0.1)",
-            cursor: "pointer", // ✅ နှိပ်လို့ရတယ်ဆိုတာပြ
+            cursor: "pointer",
             transition: "transform 0.2s ease",
           }}
           onMouseEnter={(e) => {
@@ -304,16 +307,17 @@ export default function ProductDetailModal({
               stroke: isWishlisted ? '#ef4444' : '#ffffff',
               strokeWidth: isWishlisted ? 0 : 2,
               transition: 'all 0.3s ease',
-              pointerEvents: "none", // ✅ Heart ကိုတိုက်ရိုက်မနှိပ်ရဘူး
+              pointerEvents: "none",
             }}
           />
         </div>
-      )}
+      )}      
 
+      {/* Product Image Section */}
       <div
         style={{
           width: "100%",
-          height: "55vh",
+          height: "45vh",
           backgroundColor: "var(--card-background)",
           position: "relative",
           flexShrink: 0,
@@ -335,28 +339,30 @@ export default function ProductDetailModal({
           }}
         />
 
+        {/* Platform Watermark Logo */}
         <div
           style={{
             position: "absolute",
-            top: "4px",
+            top: "6px",
             left: "12px",
-            width: "100px",
-            height: "100px",
+            width: "68px",
+            height: "68px",
             overflow: "hidden",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 5
+            zIndex: 5,
+            backgroundColor: "rgba(0, 0, 0, 0)",            
+            padding: "4px",
           }}
         >
           <img
             src="/logo.png"
-            alt="Shop Logo"
+            alt="Platform Logo"
             style={{
               width: "100%",
               height: "100%",
-              objectFit: "contain",
-              padding: "4px"
+              objectFit: "contain"
             }}
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = 'none';
@@ -364,306 +370,178 @@ export default function ProductDetailModal({
           />
         </div>
 
+        {/* Image Marquee (Location & Phone) */}
         <div
           style={{
             position: "absolute",
             bottom: 0,
             left: 0,
             right: 0,
-            background: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 70%, transparent 100%)",
-            padding: "12px 16px 10px 16px",
+            background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)",
+            padding: "16px 16px 10px 16px",
             zIndex: 5,
+            display: "flex",
+            alignItems: "center",
             overflow: "hidden"
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              overflow: "hidden",
-              position: "relative"
-            }}
-          >
-            <MapPin size={14} style={{ color: "#F59E0B", flexShrink: 0 }} />
-            
+          <div style={{ flex: 1, minWidth: 0, overflow: "hidden", position: "relative" }}>
             <div
               style={{
-                flex: 1,
-                minWidth: 0,
-                overflow: "hidden",
-                position: "relative"
+                display: "inline-block",
+                whiteSpace: "nowrap",
+                animation: "marqueeCombined 20s linear infinite",
+                paddingLeft: "100%"
               }}
             >
-              <div
-                style={{
-                  display: "inline-block",
-                  whiteSpace: "nowrap",
-                  animation: "marquee 15s linear infinite",
-                  paddingLeft: "100%"
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "13px",
-                    color: "var(--accent)",
-                    fontWeight: "400"
-                  }}
-                >
+              {/* Location Part */}
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", verticalAlign: "middle" }}>
+                <MapPin size={14} style={{ color: "#F59E0B" }} />
+                <span style={{ fontSize: "13px", color: "var(--accent)", fontWeight: "400" }}>
                   {product?.location || "Location not specified"}
                 </span>
-                
-                {sellerPhone && (
-                  <span
-                    style={{
-                      fontSize: "13px",
-                      color: "#F59E0B",
-                      fontWeight: "500",
-                      marginLeft: "20px",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px"
-                    }}
-                  >
-                    <Phone size={13} style={{ color: "var(--success)" }} />
-                    {sellerPhone}
-                  </span>
-                )}
-              </div>
+              </span>
+
+              {/* Phone Part */}
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", verticalAlign: "middle", marginLeft: "24px" }}>
+                <Phone size={14} style={{ color: "#10B981" }} />
+                <span style={{ fontSize: "13px", color: "#ffffff", fontWeight: "500" }}>
+                  {sellerPhone || "Phone not available"}
+                </span>
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom Info */}
+      {/* Bottom Information Container */}
       <div
         style={{
-          padding: "12px 16px 12px 16px",
+          padding: "16px",
           display: "flex",
           flexDirection: "column",
           flex: 1,
           minHeight: 0,
-          backgroundColor: "var(--background)"
+          backgroundColor: "var(--background)",
+          overflowY: "auto"
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "12px"
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h2
-                style={{
-                  fontSize: "18px",
-                  fontWeight: "500",
-                  color: "#F59E0B",
-                  margin: "0 0 2px 0"
-                }}
-              >
-                {product.brand}
-              </h2>
-              
-              <h3
-                style={{
-                  fontSize: "15px",
-                  fontWeight: "700",
-                  color: "var(--foreground)",
-                  margin: "0 0 4px 0",
-                  lineHeight: 1.3
-                }}
-              >
-                {product.title}
-              </h3>
+        {/* Brand, Shop Name & Title */}
+        <div style={{ marginBottom: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2px" }}>
+            <h2 style={{ fontSize: "14px", fontWeight: "600", color: "#F59E0B", margin: 0, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              {product.brand}
+            </h2>
+            
+            {/* Shop Name placed cleanly near brand/title without border (Dark/Light mode adaptive) */}
+            <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+              <Store size={13} style={{ color: "var(--foreground)" }} />
+              <span style={{ fontSize: "13px", color: "var(--foreground)", fontWeight: "600" }}>
+                {shopName || "Shop Name"}
+              </span>
+            </div>
+          </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  marginTop: "6px",
-                  marginBottom: "8px",
-                  flexWrap: "wrap"
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    cursor: "default"
-                  }}
-                >
-                  <StarRating 
-                    rating={product.averageRating || 0} 
-                    readonly={true} 
-                    size={14} 
-                  />
-                  <span style={{
-                    color: "var(--text-secondary)",
-                    fontSize: "14px",
-                    fontWeight: "500"
-                  }}>
-                    {product.averageRating || 0} ({product.totalReviews || 0})
-                  </span>
-                </div>
+          <h3 style={{ fontSize: "16px", fontWeight: "700", color: "var(--foreground)", margin: "0 0 6px 0", lineHeight: 1.3 }}>
+            {product.title}
+          </h3>
 
-                {isBuyer && (
-                  <span
-                    onClick={handleOpenReviewForm}
-                    style={{
-                      color: "var(--accent)",
-                      fontSize: "13px",
-                      fontWeight: "500",
-                      cursor: "pointer",
-                      display: "inline-block",
-                      animation: "twinkle 5s ease-in-out infinite",
-                      textDecoration: "none",
-                      border: "none",
-                      background: "transparent",
-                      padding: "0",
-                      margin: "0"
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.animation = "none";
-                      e.currentTarget.style.textShadow = "0 0 8px rgba(56, 189, 248, 0.5)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.animation = "twinkle 5s ease-in-out infinite";
-                      e.currentTarget.style.textShadow = "none";
-                    }}
-                  >
-                    Review
-                  </span>
-                )}
-              </div>
-
-              {/* ✅ Price and Custom Discount Row */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  marginTop: "2px",
-                  overflow: "hidden",
-                  width: "100%"
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "15px",
-                    fontWeight: "700",
-                    color: "var(--success)",
-                    flexShrink: 0
-                  }}
-                >
-                  {product.price} MMK
-                </div>
-
-                {/* ✅ Custom Discount Marquee beside Price */}
-                {hasCustomDiscount && (
-                  <div
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      overflow: "hidden",
-                      position: "relative"
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "inline-block",
-                        whiteSpace: "nowrap",
-                        animation: "marqueeDiscount 15s linear infinite",
-                        paddingLeft: "100%"
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          color: "var(--foreground)"
-                        }}
-                      >
-                        {product.customDiscount}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
+          {/* Rating & Review Row */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <StarRating rating={product.averageRating || 0} readonly={true} size={14} />
+              <span style={{ color: "var(--text-secondary)", fontSize: "13px", fontWeight: "500" }}>
+                {product.averageRating || 0} ({product.totalReviews || 0})
+              </span>
             </div>
 
-            {!loading && allowChat && !isOwner && product.sellerId && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleChatNow();
-                }}
+            {isBuyer && (
+              <span
+                onClick={handleOpenReviewForm}
                 style={{
-                  backgroundColor: "var(--accent)",
-                  color: "#000000",
-                  border: "none",
-                  borderRadius: "50px",
-                  padding: "8px 16px",
-                  fontWeight: "600",
+                  color: "var(--accent)",
                   fontSize: "13px",
+                  fontWeight: "600",
                   cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  flexShrink: 0,
-                  whiteSpace: "nowrap"
+                  background: "transparent",
+                  border: "none",
+                  padding: 0
                 }}
               >
-                <MessageCircle size={16} />
-                Chat Now
-              </button>
+                Review
+              </span>
+            )}
+          </div>
+
+          {/* Price & Custom Discount Row */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", background: "var(--card-background)", padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--card-border)" }}>
+            <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--success)", flexShrink: 0 }}>
+              {product.price} MMK
+            </div>
+
+            {hasCustomDiscount && (
+              <div style={{ flex: 1, minWidth: 0, overflow: "hidden", position: "relative" }}>
+                <div style={{ display: "inline-block", whiteSpace: "nowrap", animation: "marqueeDiscount 15s linear infinite", paddingLeft: "100%" }}>
+                  <span style={{ fontSize: "12px", fontWeight: "600", color: "var(--foreground)" }}>
+                    {product.customDiscount}
+                  </span>
+                </div>
+              </div>
             )}
           </div>
         </div>
+        
 
+        {/* Product Details Description Box */}
         {product?.description && (
           <div
             style={{
               backgroundColor: "var(--card-background)",
               border: "1px solid var(--card-border)",
               borderRadius: "8px",
-              padding: "10px 14px",
+              padding: "12px 14px",
               flex: 1,
-              minHeight: 0,
+              minHeight: "100px",
               overflowY: "auto",
-              overflowX: "hidden",
-              marginTop: "10px",
-              marginBottom: "8px"
+              marginTop: "8px",
+              marginBottom: "12px"
             }}
           >
-            <div
-              style={{
-                color: "#F59E0B",
-                fontSize: "14px",
-                fontWeight: "600",
-                marginBottom: "4px",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px"
-              }}
-            >
+            <div style={{ color: "#F59E0B", fontSize: "13px", fontWeight: "600", marginBottom: "6px", textTransform: "uppercase" }}>
               Product Details
             </div>
-            <div
-              style={{
-                color: "var(--foreground)",
-                fontSize: "13px",
-                lineHeight: 1.7,
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word"
-              }}
-            >
+            <div style={{ color: "var(--foreground)", fontSize: "13px", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
               {product.description}
             </div>
+          </div>
+        )}
+
+        {/* Sticky Bottom Chat Button */}
+        {!loading && allowChat && !isOwner && product.sellerId && (
+          <div style={{ position: "sticky", bottom: 0, paddingTop: "8px", paddingBottom: "4px", backgroundColor: "var(--background)" }}>
+            <button
+              onClick={handleChatNow}
+              style={{
+                width: "100%",
+                backgroundColor: "var(--accent)",
+                color: "#000000",
+                border: "1px solid var(--card-border)",
+                borderRadius: "12px",
+                padding: "12px",
+                fontWeight: "700",
+                fontSize: "14px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+              }}
+            >
+              <MessageCircle size={18} />
+              Chat Now
+            </button>
           </div>
         )}
       </div>
@@ -684,24 +562,13 @@ export default function ProductDetailModal({
           from { opacity: 0; }
           to { opacity: 1; }
         }
-        
-        @keyframes marquee {
+        @keyframes marqueeCombined {
           0% { transform: translateX(0%); }
           100% { transform: translateX(-100%); }
         }
-        
         @keyframes marqueeDiscount {
           0% { transform: translateX(0%); }
           100% { transform: translateX(-100%); }
-        }
-        
-        @keyframes twinkle {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0;
-          }
         }
       `}</style>
     </div>

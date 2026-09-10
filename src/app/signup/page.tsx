@@ -179,6 +179,7 @@ export default function SignUp() {
         username: username.trim(),
         email: email,
         role: role,
+        status: role === 'seller' ? 'pending' : 'approved', // 👈 Admin က အတည်ပြုရန် status ထည့်ခြင်း
         createdAt: new Date().toISOString(),
         displayName: username.trim(),
         photoURL: null,

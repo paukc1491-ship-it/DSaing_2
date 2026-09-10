@@ -1,4 +1,4 @@
-// SellerDashboard.tsx - အပြည့်အစုံ
+// SellerDashboard.tsx - အပြည့်အစုံ (PaymentSubmission ပေါင်းထည့်ပြီး)
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -11,6 +11,7 @@ import { ArrowLeft, Package, PlusCircle, Search, ClipboardList, BarChart3, Eye, 
 import { useLanguage } from '@/components/LanguageProvider';
 import ProductAnalyticsModal from '@/components/ProductAnalyticsModal';
 import ProductDetailModal from '@/components/ProductDetailModal';
+import PaymentSubmission from '@/components/PaymentSubmission'; // 👈 Telegram စလစ်တင်ရန် Component ထည့်သွင်းခြင်း
 
 // ✅ Product Interface
 interface Product {
@@ -674,6 +675,11 @@ export default function SellerDashboard() {
             <BarChart3 size={18} />
             {t('dashboard.salesReport')}
           </Link>
+        </div>
+
+        {/* ✅ Subscription & Payment Submission Component (မူလအတိုင်း ထည့်သွင်းထားသည်) */}
+        <div style={{ marginBottom: '24px' }}>
+          <PaymentSubmission userData={userData} />
         </div>
 
         {/* Products Section with Search Bar */}
