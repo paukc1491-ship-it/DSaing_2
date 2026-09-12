@@ -679,7 +679,10 @@ export default function SellerDashboard() {
 
         {/* ✅ Subscription & Payment Submission Component (မူလအတိုင်း ထည့်သွင်းထားသည်) */}
         <div style={{ marginBottom: '24px' }}>
-          <PaymentSubmission userData={userData} />
+          <PaymentSubmission 
+            userData={userData} 
+            userId={user?.uid || ''} 
+          />
         </div>
 
         {/* Products Section with Search Bar */}

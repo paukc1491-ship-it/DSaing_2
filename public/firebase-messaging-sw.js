@@ -4,17 +4,19 @@
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
 
-// ၂။ Firebase Config (သင့်ရဲ့ config အချက်အလက်များကို ဒီမှာ အပြည့်အစုံ ထည့်ပါ)
+// ၂။ Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyDZp2yLittnCqMuynDJE-YZcgWdAxmymwo",
   authDomain: "d-saing-chat.firebaseapp.com",
+  databaseURL: "https://d-saing-chat-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "d-saing-chat",
   storageBucket: "d-saing-chat.firebasestorage.app",
   messagingSenderId: "533173820233",
   appId: "1:533173820233:web:93361cab4873f791991898",
+  measurementId: "G-W63WPRF433"
 };
 
-// ၃။ Firebase ကို Initialize လုပ်ခြင်း (Service Worker အတွက် အဓိက)
+// ၃။ Firebase ကို Initialize လုပ်ခြင်း
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 } else {
@@ -25,7 +27,14 @@ if (!firebase.apps.length) {
 const messaging = firebase.messaging();
 
 // ===== PWA Cache =====
-const CACHE_NAME = "d-saing-v1";
+const CACHE_NAME = "d-saing-v4"; // ✅ version အသစ်
+
+// ✅ Offline Response ပြန်တဲ့ Helper
+const offlineResponse = () => new Response('Offline', {
+  status: 503,
+  statusText: 'Service Unavailable',
+  headers: new Headers({ 'Content-Type': 'text/plain' }),
+});
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -34,7 +43,6 @@ self.addEventListener("install", (event) => {
       return cache.addAll([
         "/",
         "/messages",
-        "/messages/[chatId]",  // ✅ Dynamic route အတွက် ထည့်ပါ
         "/manifest.json",
         "/icons/icon-192x192.png",
         "/icons/icon-512x512.png"
@@ -57,37 +65,86 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// ✅ Fetch Handler - Filter လုပ်ထားတယ်
 self.addEventListener("fetch", (event) => {
-  // ✅ messages/[chatId] အတွက် Navigation Preload သုံးပါ
-  if (event.request.mode === 'navigate' && event.request.url.includes('/messages/')) {
+  const { request } = event;
+  
+  // ❌ GET မဟုတ်ရင် Cache မလုပ်ဘူး
+  if (request.method !== 'GET') {
+    return;
+  }
+
+  let url;
+  try {
+    url = new URL(request.url);
+  } catch {
+    return;
+  }
+
+  // ❌ Firebase, Google APIs, Cloudinary, Unsplash တွေကို Cache မလုပ်ဘူး
+  if (
+    url.hostname.includes('firebase') ||
+    url.hostname.includes('googleapis.com') ||
+    url.hostname.includes('cloudinary.com') ||
+    url.hostname.includes('gstatic.com') ||
+    url.hostname.includes('unsplash.com') ||
+    url.pathname.startsWith('/api/')
+  ) {
+    return;
+  }
+
+  // ❌ HTTP/HTTPS မဟုတ်ရင် Cache မလုပ်ဘူး
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return;
+  }
+
+  // ✅ Navigation requests တွေအတွက် Network-first
+  if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match('/messages');
+      fetch(request).catch(() => {
+        return caches.match(request).then((cached) => {
+          // ✅ Cache မရှိရင် Default Response ပြန်
+          return cached || offlineResponse();
+        });
       })
     );
     return;
   }
 
-  if (event.request.method === 'POST') {
-    event.respondWith(fetch(event.request));
-    return;
-  }
-
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (response && response.status === 200) {
-          const clonedResponse = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clonedResponse);
-          });
+  // ✅ Same-Origin requests တွေအတွက်ပဲ Cache-first
+  if (url.origin === self.location.origin) {
+    event.respondWith(
+      caches.match(request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
         }
-        return response;
+        return fetch(request)
+          .then((response) => {
+            // ✅ Response ကို Cache လုပ်ဖို့ သေချာစစ်ပါ
+            if (
+              response &&
+              response.status === 200 &&
+              response.type === 'basic'
+            ) {
+              const clonedResponse = response.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(request, clonedResponse).catch((err) => {
+                  // ✅ Cache.put() error တက်ရင် လျစ်လျူရှုပါ
+                  console.warn('⚠️ Cache.put failed (ignored):', err.message);
+                });
+              });
+            }
+            return response;
+          })
+          .catch(() => {
+            return caches.match(request).then((cached) => {
+              // ✅ Cache မရှိရင် Default Response ပြန်
+              return cached || offlineResponse();
+            });
+          });
       })
-      .catch(() => {
-        return caches.match(event.request);
-      })
-  );
+    );
+  }
 });
 
 // ===== Push Notifications (Firebase Background Message) =====
@@ -97,8 +154,7 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.data?.title || payload.notification?.title || 'D Saing';
   const notificationBody = payload.data?.body || payload.notification?.body || 'New message!';
   
-  const chatId = payload.data?.chatId || '';
-  const notificationUrl = chatId ? `/messages/${chatId}` : '/messages';
+  const notificationUrl = payload.data?.url || (payload.data?.chatId ? `/messages/${payload.data.chatId}` : '/messages');
   
   const notificationOptions = {
     body: notificationBody,
@@ -108,7 +164,7 @@ messaging.onBackgroundMessage((payload) => {
     requireInteraction: true,
     data: {
       url: notificationUrl,
-      chatId: chatId,
+      chatId: payload.data?.chatId || '',
     },
   };
 
@@ -117,26 +173,22 @@ messaging.onBackgroundMessage((payload) => {
 
 // ===== Notification Click =====
 self.addEventListener("notificationclick", (event) => {
+  console.log('🔔 Notification clicked:', event.notification.data);
+  
   event.notification.close();
   
-  const url = event.notification.data?.url || "/messages";
-  const chatId = event.notification.data?.chatId || '';
+  const targetUrl = event.notification.data?.url || "/messages";
+  const fullUrl = new URL(targetUrl, self.location.origin).href;
   
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      // ရှိပြီးသား Client ကိုရှာပါ
       for (const client of clientList) {
-        if (client.url.includes("/messages") && "focus" in client) {
-          // chatId ရှိရင် သီးခြား Chat Room ကိုသွားပါ
-          if (chatId && client.url.includes(chatId)) {
-            return client.focus();
-          }
+        if (client.url === fullUrl && "focus" in client) {
           return client.focus();
         }
       }
-      // မရှိရင် အသစ်ဖွင့်ပါ
       if (clients.openWindow) {
-        return clients.openWindow(url);
+        return clients.openWindow(fullUrl);
       }
     })
   );

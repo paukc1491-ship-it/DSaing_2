@@ -107,7 +107,9 @@ export default function BannerSlider({
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: "3px" }}>
                 <MapPin size={12} style={{ color: "#ef4444" }} />
-                <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{banner.location}</span>
+                <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                  {banner.location || banner.city || 'Location not specified'}
+                </span>
               </div>
             </div>
             <h3 style={{ 

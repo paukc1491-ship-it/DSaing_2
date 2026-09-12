@@ -18,16 +18,27 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🔵 [1] Login started');
     setError('');
     setResetMessage('');
     setLoading(true);
 
     try {
+      console.log('🔵 [2] Calling Firebase Auth...');
       await signInWithEmailAndPassword(auth, email, password);
-      router.push('/');
+      console.log('✅ [3] Login successful');
+      
+      console.log('🔵 [4] About to navigate...');
+      
+      // ✅ window.location.href ကို သုံးပါ
+      window.location.href = '/';
+      
+      console.log('🔵 [5] Navigation called');
     } catch (err: any) {
-      console.error('Login error:', err);
-      // Firebase auth error codes များအတွက် ပိုမိုပြည့်စုံစွာ စစ်ဆေးပေးခြင်း
+      console.error('❌ [ERROR] Login error:', err);
+      console.error('❌ [ERROR CODE]', err.code);
+      console.error('❌ [ERROR MESSAGE]', err.message);
+      
       if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
         setError('Invalid email or password');
       } else if (err.code === 'auth/invalid-email') {
@@ -37,6 +48,7 @@ export default function Login() {
       }
     } finally {
       setLoading(false);
+      console.log('🔵 [6] Login finished');
     }
   };
 

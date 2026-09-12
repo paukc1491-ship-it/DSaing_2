@@ -155,14 +155,25 @@ export default function Home() {
   };
 
   const handleFeaturedBannerClick = (banner: any) => {
-    if (!banner.targetSellerId) return;
+    // ✅ productId မရှိရင် ဘာမှမလုပ်ဘူး
+    if (!banner.productId) {
+      console.warn('⚠️ Banner has no productId');
+      return;
+    }
 
     const allowChat = userRole !== 'seller';
+    
+    // ✅ productId နဲ့ targetSellerId ကို သုံးပြီး Product Detail Modal ကိုဖွင့်
     handleProductClick({
-      ...banner,
-      id: banner.productId,
-      sellerId: banner.targetSellerId,
-      sellerName: banner.brand
+      id: banner.productId,                    // ✅ Product ID
+      sellerId: banner.targetSellerId || '',   // ✅ Seller ID
+      sellerName: banner.brand,                // ✅ Seller Name (Banner brand)
+      title: banner.title,
+      image: banner.image,
+      discount: banner.discount,
+      location: banner.location || '',
+      brand: banner.brand,
+      // Product data ကို ProductDetailModal က Firestore ကနေ refresh လုပ်မယ်
     }, allowChat);
   };
 

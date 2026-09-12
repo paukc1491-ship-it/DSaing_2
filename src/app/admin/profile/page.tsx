@@ -1,3 +1,4 @@
+// app/admin/profile/page.tsx
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -5,12 +6,12 @@ import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Camera, Loader2, Upload, X } from 'lucide-react';
+import { ArrowLeft, Camera, Loader2, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 
-export default function ProfilePage() {
+export default function AdminProfilePage() {
   const { t } = useLanguage();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -20,16 +21,6 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [photoURL, setPhotoURL] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [profileMessage, setProfileMessage] = useState('');
-  const [profileError, setProfileError] = useState('');
-  const [formData, setFormData] = useState({
-    username: '',
-    shopName: '',
-    shopAddress: '',
-    shopPhone: '',
-    shopDescription: ''
-  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -41,13 +32,13 @@ export default function ProfilePage() {
           const data = snapshot.data();
           setUserData(data);
           setPhotoURL(data.photoURL || null);
-          setFormData({
-            username: data.username || data.displayName || '',
-            shopName: data.shopName || '',
-            shopAddress: data.shopAddress || '',
-            shopPhone: data.shopPhone || '',
-            shopDescription: data.shopDescription || ''
-          });
+          
+          // Check if user is admin
+          if (data.role !== 'admin') {
+            router.push('/');
+          }
+        } else {
+          router.push('/profile');
         }
       } else {
         router.push('/login');
@@ -77,10 +68,10 @@ export default function ProfilePage() {
 
       setPhotoURL(downloadURL);
       setUserData((prev: any) => ({ ...prev, photoURL: downloadURL }));
-      alert('✅ Profile picture updated successfully!');
+      alert('✅ Admin profile picture updated successfully!');
     } catch (error) {
       console.error('Upload error:', error);
-      alert(t('Upload Error'));
+      alert('Upload Error');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -91,43 +82,6 @@ export default function ProfilePage() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleImageUpload(file);
-  };
-
-  const handleProfileSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !userData) return;
-
-    setSaving(true);
-    setProfileMessage('');
-    setProfileError('');
-
-    try {
-      const username = formData.username.trim();
-      if (username.length < 2) {
-        throw new Error('Username must be at least 2 characters');
-      }
-
-      const updateData = {
-        username,
-        displayName: username,
-        ...(userData.role === 'seller' ? {
-          shopName: formData.shopName.trim(),
-          shopAddress: formData.shopAddress.trim(),
-          shopPhone: formData.shopPhone.trim(),
-          shopDescription: formData.shopDescription.trim()
-        } : {})
-      };
-
-      await updateDoc(doc(db, 'users', user.uid), updateData);
-      setUserData((current: any) => ({ ...current, ...updateData }));
-      setFormData((current) => ({ ...current, username }));
-      setProfileMessage('Profile saved successfully.');
-    } catch (error: any) {
-      console.error('Profile save error:', error);
-      setProfileError(error.message || 'Failed to save profile');
-    } finally {
-      setSaving(false);
-    }
   };
 
   if (loading) {
@@ -146,25 +100,14 @@ export default function ProfilePage() {
   }
 
   if (!user || !userData) {
-    return (
-      <div style={{ 
-        minHeight: '100vh', 
-        backgroundColor: 'var(--background)', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        color: 'var(--foreground)'
-      }}>
-        {t('User Not Found')}
-      </div>
-    );
+    return null;
   }
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--background)', padding: '20px' }}>
       <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-        <Link href="/" style={{ color: 'var(--accent)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-          <ArrowLeft size={20} />
+        <Link href="/admin/payments" style={{ color: 'var(--accent)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+          <ArrowLeft size={20} /> Back to Payments
         </Link>
 
         <div style={{
@@ -195,18 +138,18 @@ export default function ProfilePage() {
                   fontSize: '40px',
                   fontWeight: '700',
                   color: 'var(--foreground)',
-                  border: `3px solid ${userData.role === 'seller' ? '#FFD700' : userData.role === 'admin' ? '#FF4500' : 'var(--accent)'}`,
+                  border: '3px solid #ef4444',
                   overflow: 'hidden'
                 }}
               >
                 {photoURL ? (
                   <img 
                     src={photoURL} 
-                    alt={userData.username || 'User'} 
+                    alt={userData.username || 'Admin'} 
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 ) : (
-                  userData.username?.charAt(0).toUpperCase() || 'U'
+                  userData.username?.charAt(0).toUpperCase() || 'A'
                 )}
               </div>
 
@@ -220,7 +163,6 @@ export default function ProfilePage() {
                   gap: '4px'
                 }}
               >
-                {/* Choose Image Button */}
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
@@ -234,14 +176,12 @@ export default function ProfilePage() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: uploading ? 'default' : 'pointer',
-                    color: 'var(--text-secondary)',
-                    transition: 'all 0.2s'
+                    color: 'var(--text-secondary)'
                   }}
                 >
                   <Upload size={14} />
                 </button>
 
-                {/* Camera Button */}
                 <button
                   onClick={() => cameraInputRef.current?.click()}
                   disabled={uploading}
@@ -255,8 +195,7 @@ export default function ProfilePage() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: uploading ? 'default' : 'pointer',
-                    color: 'var(--text-secondary)',
-                    transition: 'all 0.2s'
+                    color: 'var(--text-secondary)'
                   }}
                 >
                   {uploading ? (
@@ -267,7 +206,6 @@ export default function ProfilePage() {
                 </button>
               </div>
 
-              {/* Hidden File Inputs */}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -287,14 +225,14 @@ export default function ProfilePage() {
 
             <div style={{ textAlign: 'center' }}>
               <h1 style={{ color: 'var(--foreground)', fontSize: '28px', fontWeight: '700', margin: 0 }}>
-                {userData.username || t('User')}
+                {userData.username || 'Admin'}
               </h1>
               <span style={{
-                color: userData.role === 'seller' ? '#FFD700' : userData.role === 'admin' ? '#FF4500' : 'var(--accent)',
+                color: '#ef4444',
                 fontSize: '16px',
                 fontWeight: '500'
               }}>
-                {userData.role === 'seller' ? '🛒 ' + t('sidebar.seller') : userData.role === 'admin' ? '🛡️ Admin' : '👤 ' + t('sidebar.buyer')}
+                🛡️ Administrator
               </span>
             </div>
           </div>
@@ -304,17 +242,15 @@ export default function ProfilePage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
               <span style={{ fontSize: '18px' }}>💼</span>
               <div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{t('Role')}</div>
-                <div style={{ color: 'var(--foreground)', fontSize: '16px' }}>
-                  {userData.role === 'seller' ? t('Seller') : userData.role === 'admin' ? 'Admin' : t('Buyer')}
-                </div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Role</div>
+                <div style={{ color: 'var(--foreground)', fontSize: '16px' }}>Admin</div>
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span style={{ fontSize: '18px' }}>📅</span>
               <div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{t('Member Since')}</div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Member Since</div>
                 <div style={{ color: 'var(--foreground)', fontSize: '16px' }}>
                   {userData.createdAt ? new Date(userData.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}
                 </div>
@@ -324,7 +260,7 @@ export default function ProfilePage() {
           
           <div style={{ marginTop: '24px', borderTop: '1px solid var(--card-border)', paddingTop: '20px' }}>
             <button
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/admin/payments')}
               style={{
                 width: '100%',
                 padding: '12px',
@@ -337,18 +273,11 @@ export default function ProfilePage() {
                 cursor: 'pointer'
               }}
             >
-              {t('Go Home')}
+              Go to Payment Approvals
             </button>
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }

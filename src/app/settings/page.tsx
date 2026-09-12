@@ -558,7 +558,9 @@ export default function BuyerSettings() {
                       {language === 'my' ? 'အကောင့်အမျိုးအစား' : 'Account Type'}
                     </div>
                     <div style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
-                      {language === 'my' ? 'ဝယ်ယူသူ' : 'Buyer'}
+                      {userData?.role === 'seller' ? (language === 'my' ? 'ရောင်းချသူ' : 'Seller') : 
+                      userData?.role === 'admin' ? 'Admin' : 
+                      (language === 'my' ? 'ဝယ်ယူသူ' : 'Buyer')}
                     </div>
                   </div>
                 </div>

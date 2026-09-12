@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import NotificationToggle from '@/components/NotificationToggle';
 import ThemeToggle from '@/components/ThemeToggle';
+import { MYANMAR_CITIES, STATE_LIST, STATE_TRANSLATIONS, CITY_TO_STATE } from '@/data/cities';
 import { 
   ArrowLeft, 
   User, 
@@ -111,6 +112,9 @@ export default function SellerSettings() {
   const [formData, setFormData] = useState({
     displayName: '',
     shopAddress: '',
+    shopAddressDetail: '',   // ✅ ထည့်ပါ
+    shopCity: '',            // ✅ ထည့်ပါ
+    shopState: '',           // ✅ ထည့်ပါ
     phone: '',
     dateOfBirth: '',
     openingHours: '',
@@ -146,6 +150,7 @@ export default function SellerSettings() {
           const snapshot = await getDoc(userRef);
           
           if (snapshot.exists()) {
+            // ✅ Document ရှိရင်
             const data = snapshot.data();
             setUserData(data);
             
@@ -154,11 +159,14 @@ export default function SellerSettings() {
             setFormData({
               displayName: displayName,
               shopAddress: data.shopAddress || '',
+              shopAddressDetail: data.shopAddressDetail || '',   // ✅ data ကိုသုံး
+              shopCity: data.shopCity || '',                     // ✅ data ကိုသုံး
+              shopState: data.shopState || '',                   // ✅ data ကိုသုံး
               phone: data.phone || '',
               dateOfBirth: data.dateOfBirth || '',
               openingHours: data.openingHours || '',
               closingHours: data.closingHours || '',
-              shopDescription: data.shopDescription || '',              
+              shopDescription: data.shopDescription || '',
               email: user.email || ''
             });
 
@@ -170,15 +178,19 @@ export default function SellerSettings() {
 
             checkCanChange('displayName', data.lastDisplayNameChange);
             checkCanChange('phone', data.lastPhoneChange);
-            checkCanChange('shopAddress', data.lastShopAddressChange);        
-                        
+            checkCanChange('shopAddress', data.lastShopAddressChange);
+            
             if (data.role !== 'seller') {
               router.push('/');
             }
           } else {
+            // ✅ Document မရှိရင် အသစ်ဖန်တီး
             const newUserData = {
               displayName: user.displayName || user.email?.split('@')[0] || 'User',
               shopAddress: '',
+              shopAddressDetail: '',
+              shopCity: '',
+              shopState: '',
               phone: '',
               dateOfBirth: '',
               openingHours: '',
@@ -197,14 +209,18 @@ export default function SellerSettings() {
             
             await setDoc(userRef, newUserData);
             setUserData(newUserData);
+            
             setFormData({
-              displayName: newUserData.displayName,
+              displayName: newUserData.displayName,           // ✅ newUserData ကိုသုံး
               shopAddress: newUserData.shopAddress,
+              shopAddressDetail: newUserData.shopAddressDetail,
+              shopCity: newUserData.shopCity,
+              shopState: newUserData.shopState,
               phone: newUserData.phone,
-              dateOfBirth: '',
-              openingHours: '',
-              closingHours: '',
-              shopDescription: '',
+              dateOfBirth: newUserData.dateOfBirth,
+              openingHours: newUserData.openingHours,
+              closingHours: newUserData.closingHours,
+              shopDescription: newUserData.shopDescription,
               email: user.email || ''
             });
             
@@ -284,6 +300,7 @@ export default function SellerSettings() {
       const updateData: any = {};
       const now = new Date().toISOString();
 
+      // ✅ Default Fields (အမြဲ Update ဖြစ်တဲ့ Fields)
       updateData.language = language;
       updateData.notifications = notifications;
       updateData.dateOfBirth = formData.dateOfBirth;
@@ -291,13 +308,13 @@ export default function SellerSettings() {
       updateData.closingHours = formData.closingHours;
       updateData.shopDescription = formData.shopDescription.trim();
 
-      const fields = [
+      // ✅ 30-Day Rule ရှိတဲ့ Fields (DisplayName, Phone)
+      const restrictedFields = [
         { key: 'displayName', value: formData.displayName, dbField: 'lastDisplayNameChange', label: 'Display Name' },
         { key: 'phone', value: formData.phone, dbField: 'lastPhoneChange', label: 'Phone' },
-        { key: 'shopAddress', value: formData.shopAddress, dbField: 'lastShopAddressChange', label: 'Shop Address' }
       ];
 
-      for (const field of fields) {
+      for (const field of restrictedFields) {
         const currentValue = userData ? (userData[field.key] || '') : '';
         const newValue = field.value?.trim() || '';
 
@@ -319,24 +336,75 @@ export default function SellerSettings() {
         }
       }
 
+      // ✅ Shop Address - 30-Day Rule ရှိတယ်
+      const newAddressDetail = (formData as any).shopAddressDetail?.trim() || '';
+      const newCity = (formData as any).shopCity?.trim() || '';
+      const newState = (formData as any).shopState?.trim() || '';
+      const currentAddressDetail = userData?.shopAddressDetail || '';
+      const currentCity = userData?.shopCity || '';
+      const currentState = userData?.shopState || '';
+
+      const addressChanged =
+        newAddressDetail !== currentAddressDetail ||
+        newCity !== currentCity ||
+        newState !== currentState;
+
+      if (addressChanged) {
+        // ✅ Validation
+        if (!newAddressDetail) {
+          throw new Error('Shop Address Detail cannot be empty');
+        }
+        if (!newCity) {
+          throw new Error('Shop City cannot be empty');
+        }
+        if (!newState) {
+          throw new Error('Shop State cannot be empty');
+        }
+
+        // ✅ 30-Day Rule စစ်
+        if (!getCanChangeStatus('shopAddress')) {
+          const nextDate = getNextChangeDate('shopAddress');
+          if (!nextDate) {
+            throw new Error('Shop Address can only be changed once every 30 days.');
+          }
+          throw new Error(`Shop Address can only be changed once every 30 days. Next available on ${formatDate(nextDate)}`);
+        }
+
+        // ✅ Full Address ကို Auto-generate
+        const fullAddress = `${newAddressDetail}, ${newCity}, ${newState}`;
+
+        updateData.shopAddressDetail = newAddressDetail;   // ✅ Detail
+        updateData.shopCity = newCity;                     // ✅ City
+        updateData.shopState = newState;                   // ✅ State
+        updateData.shopAddress = fullAddress;              // ✅ Full Address (Auto)
+        updateData.lastShopAddressChange = now;            // ✅ Timestamp
+      }
+
+      // ✅ ဘာမှမပြင်ရင် Error ပြ
       if (Object.keys(updateData).length === 0) {
         setError(t('noChanges'));
         setSaving(false);
         return;
       }
 
+      // ✅ Firestore ကို Update
       await updateDoc(userRef, updateData);
       
+      // ✅ Local State ကို Update
       const updatedUserData = {
         ...(userData || {}),
         ...updateData
       };
       setUserData(updatedUserData);
 
-      for (const field of fields) {
+      // ✅ 30-Day Timer ကို Update
+      for (const field of restrictedFields) {
         if (Object.prototype.hasOwnProperty.call(updateData, field.key)) {
           checkCanChange(field.key as keyof typeof canChange, now);
         }
+      }
+      if (Object.prototype.hasOwnProperty.call(updateData, 'shopAddressDetail')) {
+        checkCanChange('shopAddress', now);
       }
 
       setSuccess(t('saved'));
@@ -472,6 +540,8 @@ export default function SellerSettings() {
             onToggle={() => setOpenSection(openSection === 'profile' ? null : 'profile')}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingTop: '12px' }}>
+              
+              {/* ၁။ Display Name */}
               <SettingsField
                 label={language === 'my' ? 'ပြသမည့်အမည်' : 'Display Name'}
                 field="displayName"
@@ -484,6 +554,7 @@ export default function SellerSettings() {
                 formatDate={formatDate}
               />
 
+              {/* ၂။ Email */}
               <div style={{ marginBottom: '12px' }}>
                 <label style={{ color: 'var(--text-secondary)', fontSize: '11px', fontWeight: '500', display: 'block', marginBottom: '3px' }}>
                   {language === 'my' ? 'အီးမေးလ်' : 'Email'}
@@ -507,6 +578,82 @@ export default function SellerSettings() {
                 />
               </div>
 
+              {/* ၃။ State Dropdown */}
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ color: 'var(--text-secondary)', fontSize: '11px', fontWeight: '500', display: 'block', marginBottom: '3px' }}>
+                  {language === 'my' ? 'ပြည်နယ် / တိုင်း' : 'State / Region'} *
+                </label>
+                <select
+                  value={formData.shopState}
+                  onChange={(e) => {
+                    setFormData({ ...formData, shopState: e.target.value, shopCity: '' });
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    backgroundColor: 'var(--input-background)',
+                    border: '1px solid var(--input-border)',
+                    borderRadius: '6px',
+                    color: 'var(--foreground)',
+                    fontSize: '13px',
+                    outline: 'none',
+                  }}
+                >
+                  <option value="">Select State</option>
+                  {STATE_LIST.map((state) => (
+                    <option key={state} value={state}>
+                      {STATE_TRANSLATIONS[state]?.en || state}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* ၄။ City Dropdown */}
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ color: 'var(--text-secondary)', fontSize: '11px', fontWeight: '500', display: 'block', marginBottom: '3px' }}>
+                  {language === 'my' ? 'မြို့' : 'City'} *
+                </label>
+                <select
+                  value={formData.shopCity}
+                  onChange={(e) => setFormData({ ...formData, shopCity: e.target.value })}
+                  disabled={!formData.shopState}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    backgroundColor: 'var(--input-background)',
+                    border: '1px solid var(--input-border)',
+                    borderRadius: '6px',
+                    color: 'var(--foreground)',
+                    fontSize: '13px',
+                    outline: 'none',
+                    opacity: formData.shopState ? 1 : 0.5,
+                  }}
+                >
+                  <option value="">Select City</option>
+                  {MYANMAR_CITIES
+                    .filter((city) => CITY_TO_STATE[city] === formData.shopState)
+                    .map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {/* ၅။ Address Detail */}
+              <SettingsField
+                label={language === 'my' ? 'ဆိုင်လိပ်စာ' : 'Shop Address Detail'}
+                field="shopAddressDetail"
+                value={formData.shopAddressDetail}
+                onChange={(val: string) => setFormData({ ...formData, shopAddressDetail: val })}
+                placeholder={language === 'my' ? 'အမှတ်၊ လမ်း' : 'No.123, Street'}
+                getCanChangeStatus={getCanChangeStatus}
+                getNextChangeDate={getNextChangeDate}
+                translate={t}
+                formatDate={formatDate}
+              />
+
+              {/* ၆။ Phone */}
               <SettingsField
                 label={language === 'my' ? 'ဖုန်းနံပါတ်' : 'Phone'}
                 field="phone"
@@ -520,6 +667,7 @@ export default function SellerSettings() {
                 type="tel"
               />
               
+              {/* ၇။ Date of Birth */}
               <SettingsField
                 label={language === 'my' ? 'မွေးသက္ကရာဇ်' : 'Date of Birth'}
                 field="dateOfBirth"
@@ -533,18 +681,7 @@ export default function SellerSettings() {
                 noRestriction={true}
               />
 
-              <SettingsField
-                label={language === 'my' ? 'ဆိုင်လိပ်စာ' : 'Shop Address'}
-                field="shopAddress"
-                value={formData.shopAddress}
-                onChange={(val: string) => setFormData({ ...formData, shopAddress: val })}
-                placeholder={language === 'my' ? 'အမှတ်၊ လမ်း၊ မြို့' : 'No.123, Street, Yangon'}
-                getCanChangeStatus={getCanChangeStatus}
-                getNextChangeDate={getNextChangeDate}
-                translate={t}
-                formatDate={formatDate}
-              />
-
+              {/* ၈။ Opening / Closing Hours */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 <SettingsField
                   label={language === 'my' ? 'ဖွင့်ချိန်' : 'Opening Hours'}

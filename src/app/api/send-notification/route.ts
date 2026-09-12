@@ -1,16 +1,15 @@
+// app/api/send-notification/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getDoc, doc, updateDoc, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 
-// Private Key ထဲက \n တွေကို တကယ့် Enter (Newline) အဖြစ် အတိအကျ ပြောင်းပေးရန်
 function formatPrivateKey(key: string | undefined) {
   if (!key) return '';
   return key.replace(/^["']|["']$/g, '').replace(/\\n/g, '\n');
 }
 
-// Firebase Admin ကို သေချာ initialize လုပ်ခြင်း
 function initAdmin() {
   const apps = getApps();
   if (!apps.length) {
@@ -29,7 +28,8 @@ function initAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, title, body, chatId } = await request.json();
+    // ✅ link သို့မဟုတ် url ကိုပါ လက်ခံနိုင်ရန် ထည့်ထားသည်
+    const { userId, title, body, chatId, link, url } = await request.json();
 
     const userRef = doc(db, 'users', userId);
     const userSnap = await getDoc(userRef);
@@ -45,11 +45,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No FCM tokens found' }, { status: 404 });
     }
 
-    // Initialize လုပ်ပြီး Messaging ကို ခေါ်သုံးမည်
     initAdmin();
     const messaging = getMessaging();
     
     let successCount = 0;
+
+    // ✅ ပို့လာသော link/url ရှိက ၎င်းကိုသုံးမည်၊ မပါလျှင် /chat သို့သွားမည်
+    const targetUrl = link || url || '/chat';
 
     for (const token of fcmTokens) {
       try {
@@ -60,15 +62,14 @@ export async function POST(request: NextRequest) {
             title,
             body,
             sound: '/sounds/notification.mp3',
-            url: '/chat',
-            chatId,
+            url: targetUrl, // ✅ ဤနေရာတွင် သတ်မှတ်ပေးလိုက်သည်
+            ...(chatId ? { chatId } : {}),
           },
         });
         successCount++;
       } catch (err: any) {
         console.error('Failed to send to token:', token, err);
         
-        // အကယ်၍ Token က သက်တမ်းကုန်သွားပြီ (Unregistered) ဆိုရင် Firestore ထဲကနေ အလိုအလျောက် ဖယ်ရှားမည်
         if (
           err.code === 'messaging/registration-token-not-registered' ||
           err.error?.code === 'UNREGISTERED'

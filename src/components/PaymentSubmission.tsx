@@ -1,16 +1,18 @@
+// components/PaymentSubmission.tsx
 'use client';
 
 import { useState } from 'react';
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { uploadToCloudinary } from '@/lib/cloudinary'; // ✅ Cloudinary import
 import { Upload, X, CheckCircle, Image as ImageIcon, AlertCircle, CreditCard } from 'lucide-react';
 
 interface PaymentSubmissionProps {
   userData: any;
+  userId: string;
 }
 
-export default function PaymentSubmission({ userData }: PaymentSubmissionProps) {
+export default function PaymentSubmission({ userData, userId }: PaymentSubmissionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{ name: string; price: number } | null>(null);
   const [senderName, setSenderName] = useState('');
@@ -19,6 +21,71 @@ export default function PaymentSubmission({ userData }: PaymentSubmissionProps) 
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ✅ Subscription Status တွက်တဲ့ Function
+  const getSubscriptionStatus = (userData: any) => {
+    const paymentStatus = userData?.paymentStatus || 'NONE';
+    const expiresAt = userData?.subscriptionExpiresAt;
+
+    // Pending
+    if (paymentStatus === 'PENDING') {
+      return {
+        status: 'PENDING',
+        borderColor: '#f59e0b', // လိမ္မော်ရောင်
+        message: 'Admin is verifying your payment...',
+      };
+    }
+
+    // Rejected
+    if (paymentStatus === 'REJECTED' || paymentStatus === 'MISMATCH') {
+      return {
+        status: 'REJECTED',
+        borderColor: '#ef4444', // အနီရောင်
+        message: 'Payment verification failed. Please resubmit.',
+      };
+    }
+
+    // Active - သက်တမ်းရှိသေးလား စစ်ပါ
+    if (paymentStatus === 'ACTIVE' && expiresAt) {
+      const now = new Date();
+      const expirationDate = new Date(expiresAt);
+      const diffInDays = Math.ceil(
+        (expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      // သက်တမ်းကုန်ပြီ
+      if (diffInDays <= 0) {
+        return {
+          status: 'EXPIRED',
+          borderColor: '#ef4444', // အနီရောင်
+          message: 'Your subscription has expired. Please renew.',
+        };
+      }
+
+      // ၇ ရက်အတွင်း ကုန်တော့မယ်
+      if (diffInDays <= 7) {
+        return {
+          status: 'EXPIRING_SOON',
+          borderColor: '#f59e0b', // အဝါရောင်
+          message: `⚠️ Your subscription expires in ${diffInDays} day${diffInDays === 1 ? '' : 's'}. Please renew soon.`,
+        };
+      }
+
+      // သက်တမ်းရှိသေးတယ်
+      return {
+        status: 'ACTIVE',
+        borderColor: '#22c55e', // အစိမ်းရောင်
+        message: `Active until ${expirationDate.toLocaleDateString()}`,
+      };
+    }
+
+    // ဘာမှမရှိ
+    return {
+      status: 'NONE',
+      borderColor: 'var(--card-border)', // ပုံမှန်
+      message: 'Subscribe to keep your shop active.',
+    };
+  };
 
   // Subscription Plans
   const plans = [
@@ -40,6 +107,13 @@ export default function PaymentSubmission({ userData }: PaymentSubmissionProps) 
   // ငွေလွှဲစလစ် တင်သွင်းရန်
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // ✅ userId ကိုစစ်ပါ
+    if (!userId) {
+      setError('အသုံးပြုသူ အချက်အလက် မပြည့်စုံသေးပါ၊ ခဏစောင့်ပါ သို့မဟုတ် အကောင့်ပြန်ဝင်ပါ။');
+      return;
+    }
+
     if (!selectedPlan) {
       setError('ကျေးဇူးပြု၍ Subscription Plan တစ်ခု ရွေးချယ်ပါ။');
       return;
@@ -57,19 +131,19 @@ export default function PaymentSubmission({ userData }: PaymentSubmissionProps) 
     setError(null);
 
     try {
-      // 1. Firebase Storage သို့ ပုံတင်ခြင်း
-      const storageRef = ref(storage, `payment_proofs/${userData?.uid}_${Date.now()}_${selectedFile.name}`);
-      const snapshot = await uploadBytes(storageRef, selectedFile);
-      const downloadUrl = await getDownloadURL(snapshot.ref);
+      // ✅ 1. Cloudinary သို့ ပုံတင်ခြင်း
+      console.log('📤 Uploading to Cloudinary...');
+      const downloadUrl = await uploadToCloudinary(selectedFile);
+      console.log('✅ Cloudinary upload success:', downloadUrl);
 
-      // 2. Firestore သို့ အချက်အလက်များ သိမ်းဆည်းခြင်း
+      // ✅ 2. Firestore သို့ အချက်အလက်များ သိမ်းဆည်းခြင်း
       await addDoc(collection(db, 'payment_submissions'), {
-        sellerId: userData?.uid || '',
-        sellerName: userData?.username || 'Unknown Seller',
+        sellerId: userId,
+        sellerName: userData?.username || userData?.displayName || 'Unknown Seller',
         planName: selectedPlan.name,
         planPrice: selectedPlan.price,
         senderName: senderName.trim(),
-        proofImageUrl: downloadUrl,
+        proofImageUrl: downloadUrl, // ✅ Cloudinary URL
         status: 'PENDING',
         createdAt: serverTimestamp(),
       });
@@ -93,7 +167,9 @@ export default function PaymentSubmission({ userData }: PaymentSubmissionProps) 
     }
   };
 
-  const paymentStatus = userData?.paymentStatus || 'NONE'; 
+  // ✅ Status ကိုတွက်ပါ
+  const subscriptionStatus = getSubscriptionStatus(userData);
+  const paymentStatus = userData?.paymentStatus || 'NONE';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
@@ -137,12 +213,62 @@ export default function PaymentSubmission({ userData }: PaymentSubmissionProps) 
         </div>
       )}
 
-      {/* Main Clickable Card Button */}
+      {/* ✅ Expiring Soon Alert */}
+      {subscriptionStatus.status === 'EXPIRING_SOON' && (
+        <div style={{
+          backgroundColor: '#451a0e',
+          border: '1px solid #92400e',
+          borderRadius: '12px',
+          padding: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          color: '#fbbf24',
+          animation: 'pulse 2s ease-in-out infinite',
+        }}>
+          <AlertCircle size={24} style={{ flexShrink: 0 }} />
+          <div>
+            <h4 style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: '600' }}>
+              ⚠️ Subscription Expiring Soon
+            </h4>
+            <p style={{ margin: 0, fontSize: '12px', opacity: 0.9 }}>
+              {subscriptionStatus.message}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Expired Alert */}
+      {subscriptionStatus.status === 'EXPIRED' && (
+        <div style={{
+          backgroundColor: '#451a1e',
+          border: '1px solid #7f1d1d',
+          borderRadius: '12px',
+          padding: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          color: '#fca5a5',
+          animation: 'pulse 2s ease-in-out infinite',
+        }}>
+          <AlertCircle size={24} style={{ flexShrink: 0 }} />
+          <div>
+            <h4 style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: '600' }}>
+              🚫 Subscription Expired
+            </h4>
+            <p style={{ margin: 0, fontSize: '12px', opacity: 0.9 }}>
+              {subscriptionStatus.message}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Main Clickable Card Button - Dynamic Border */}
       <div
         onClick={() => setIsModalOpen(true)}
         style={{
           backgroundColor: 'var(--card-background)',
-          border: '1px solid var(--card-border)',
+          border: `2px solid ${subscriptionStatus.borderColor}`, // ✅ Dynamic border color
           borderRadius: '12px',
           padding: '20px',
           display: 'flex',
@@ -152,24 +278,44 @@ export default function PaymentSubmission({ userData }: PaymentSubmissionProps) 
           gap: '16px',
           cursor: 'pointer',
           transition: 'all 0.2s ease',
+          boxShadow: `0 0 12px ${subscriptionStatus.borderColor}40`, // ✅ Glow effect
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = 'var(--accent)';
           e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = `0 0 20px ${subscriptionStatus.borderColor}60`;
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = 'var(--card-border)';
           e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = `0 0 12px ${subscriptionStatus.borderColor}40`;
         }}
       >
         <div>
           <h3 style={{ color: 'var(--foreground)', fontSize: '16px', fontWeight: '600', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <CreditCard size={18} color="var(--accent)" /> Subscription Payment
+            <CreditCard size={18} color={subscriptionStatus.borderColor} /> Subscription Payment
           </h3>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>
-            Your shop needs to pay for next months.
+            {subscriptionStatus.message}
           </p>
-        </div>        
+        </div>
+
+        {/* ✅ Status Badge */}
+        <div style={{
+          padding: '6px 14px',
+          backgroundColor: `${subscriptionStatus.borderColor}20`,
+          border: `1px solid ${subscriptionStatus.borderColor}`,
+          borderRadius: '20px',
+          color: subscriptionStatus.borderColor,
+          fontSize: '12px',
+          fontWeight: '600',
+          whiteSpace: 'nowrap',
+        }}>
+          {subscriptionStatus.status === 'ACTIVE' && '✅ Active'}
+          {subscriptionStatus.status === 'EXPIRING_SOON' && '⚠️ Expiring Soon'}
+          {subscriptionStatus.status === 'EXPIRED' && '🚫 Expired'}
+          {subscriptionStatus.status === 'PENDING' && '⏳ Pending'}
+          {subscriptionStatus.status === 'REJECTED' && '❌ Rejected'}
+          {subscriptionStatus.status === 'NONE' && '💳 Subscribe'}
+        </div>
       </div>
 
       {/* Modal Popup */}
@@ -231,7 +377,7 @@ export default function PaymentSubmission({ userData }: PaymentSubmissionProps) 
                   </div>
                 )}
 
-                {/* Plan Selection (Grid ပုံစံ လိုင်းညီညီ) */}
+                {/* Plan Selection */}
                 <div>
                   <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '8px', fontWeight: '500' }}>
                     Select Subscription Plan *
@@ -292,7 +438,7 @@ export default function PaymentSubmission({ userData }: PaymentSubmissionProps) 
                   />
                 </div>
 
-                {/* Choose Image / Folder Select */}
+                {/* Choose Image */}
                 <div>
                   <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '6px', fontWeight: '500' }}>
                     Upload Payment Slip *
