@@ -581,8 +581,15 @@ export default function ChatRoom({
       }
     }
     if (field === 'quantity') {
-      updated[index].quantity = Math.max(1, Number(value));
-      updated[index].total = updated[index].price * updated[index].quantity;
+      // empty ဖြစ်ခွင့်ပြု (user ဖျက်လို့ရအောင်)
+      if (value === '') {
+        updated[index].quantity = '';
+        updated[index].total = 0;
+      } else {
+        const qty = Number(value);
+        updated[index].quantity = qty;
+        updated[index].total = updated[index].price * qty;
+      }
     }
     setOrderItems(updated);
   };
@@ -1758,10 +1765,19 @@ export default function ChatRoom({
                       }} 
                     />
                     <input 
-                      type="number" 
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={item.quantity} 
-                      onChange={(e) => updateOrderItem(idx, 'quantity', e.target.value)} 
-                      min="1" 
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '');
+                        updateOrderItem(idx, 'quantity', val);
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value === '' || e.target.value === '0') {
+                          updateOrderItem(idx, 'quantity', '1');
+                        }
+                      }}
                       style={{ 
                         flex: 1, 
                         padding: '6px', 

@@ -352,7 +352,7 @@ export default function SellerSettings() {
       if (addressChanged) {
         // ✅ Validation
         if (!newAddressDetail) {
-          throw new Error('Shop Address Detail cannot be empty');
+          throw new Error('Shop Address cannot be empty');
         }
         if (!newCity) {
           throw new Error('Shop City cannot be empty');
@@ -642,7 +642,7 @@ export default function SellerSettings() {
 
               {/* ၅။ Address Detail */}
               <SettingsField
-                label={language === 'my' ? 'ဆိုင်လိပ်စာ' : 'Shop Address Detail'}
+                label={language === 'my' ? 'ဆိုင်လိပ်စာ' : 'Shop Address'}
                 field="shopAddressDetail"
                 value={formData.shopAddressDetail}
                 onChange={(val: string) => setFormData({ ...formData, shopAddressDetail: val })}

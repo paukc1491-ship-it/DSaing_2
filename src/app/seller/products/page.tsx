@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import { useSearchParams } from 'next/navigation';
 
 interface Product {
   id: string;
@@ -51,7 +52,9 @@ export default function ManageProducts() {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<Product>>({});
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false); 
+  const searchParams = useSearchParams(); 
+  const editCardRef = useRef<HTMLDivElement>(null);
 
   const getCreatedAtTime = (createdAt: any): number => {
     if (!createdAt) return 0;
@@ -195,6 +198,36 @@ export default function ManageProducts() {
       setFilteredProducts(filtered);
     }
   }, [searchTerm, products]);
+
+  useEffect(() => {
+  const editId = searchParams.get('edit');
+  if (!editId) return;
+  if (products.length === 0) return;
+
+  const product = products.find(p => p.id === editId);
+    if (product) {
+      setEditingId(product.id);
+      setEditData({
+        title: product.title || '',
+        price: product.price || '',
+        brand: product.brand || '',
+        category: product.category || '',
+        discount: product.discount || '',
+        customDiscount: product.customDiscount || '',
+        description: product.description || '',
+        image: product.image || '',
+        stock: product.stock || 0,
+        discountType: '',
+      });
+      // ✅ Edit mode ဖွင့်ပြီး နည်းနည်းနေပြီး scroll
+      setTimeout(() => {
+        editCardRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }, 300);
+    }
+  }, [searchParams, products]);
 
   // ============================================
   // ✅ CRUD Functions
@@ -615,6 +648,7 @@ export default function ManageProducts() {
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
+                ref={editingId === product.id ? editCardRef : null}
                 style={{
                   backgroundColor: 'var(--card-background)',
                   border: editingId === product.id ? '2px solid var(--accent)' : '1px solid var(--card-border)',
@@ -895,7 +929,7 @@ export default function ManageProducts() {
                             gap: '4px'
                           }}
                         >
-                          <Edit size={14} /> {t('common.edit')}
+                          <Edit size={14} /> Manage Product
                         </button>
                         <button
                           onClick={() => handleDelete(product.id, product.title || t('Untitled'))}
@@ -912,7 +946,7 @@ export default function ManageProducts() {
                             gap: '4px'
                           }}
                         >
-                          <Trash2 size={14} /> {t('common.delete')}
+                          <Edit size={14} /> Delete
                         </button>
                       </div>
                     </>

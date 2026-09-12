@@ -805,6 +805,7 @@ export default function SellerDashboard() {
                 return (
                   <div
                     key={product.id}
+                    onClick={() => handleOpenProductModal(product.id)}
                     style={{
                       backgroundColor: 'var(--card-background)',
                       borderRadius: '10px',

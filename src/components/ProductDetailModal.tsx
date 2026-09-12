@@ -59,6 +59,9 @@ export default function ProductDetailModal({
 
   useEffect(() => {
     if (!product?.id) return;
+    
+    // ✅ Owner (Seller) ကိုယ်တိုင် ကြည့်ရင် view မတိုး
+    if (currentUser?.uid === product.sellerId) return;
 
     const viewedKey = `viewed_${product.id}`;
     if (!sessionStorage.getItem(viewedKey)) {
@@ -68,7 +71,7 @@ export default function ProductDetailModal({
       }).catch(err => console.error('Error updating views:', err));
       sessionStorage.setItem(viewedKey, 'true');
     }
-  }, [product?.id]);
+  }, [product?.id, currentUser?.uid, product?.sellerId]);
 
   useEffect(() => {
     setProduct(initialProduct);
@@ -517,9 +520,11 @@ export default function ProductDetailModal({
           </div>
         )}
 
-        {/* Sticky Bottom Chat Button */}
-        {!loading && allowChat && !isOwner && product.sellerId && (
-          <div style={{ position: "sticky", bottom: 0, paddingTop: "8px", paddingBottom: "4px", backgroundColor: "var(--background)" }}>
+        {/* ✅ Sticky Bottom Buttons */}
+        <div style={{ position: "sticky", bottom: 0, paddingTop: "8px", paddingBottom: "4px", backgroundColor: "var(--background)" }}>
+          
+          {/* Buyer / တခြား Seller — Chat Now */}
+          {allowChat && !isOwner && product.sellerId && (
             <button
               onClick={handleChatNow}
               style={{
@@ -542,8 +547,35 @@ export default function ProductDetailModal({
               <MessageCircle size={18} />
               Chat Now
             </button>
-          </div>
-        )}
+          )}
+
+          {/* Owner (Seller ကိုယ်တိုင်) — Manage */}
+          {isOwner && (
+            <button
+              onClick={() => {
+                onClose();
+                router.push(`/seller/products?edit=${product.id}`);
+              }}
+              style={{
+                width: "100%",
+                backgroundColor: "var(--accent)",
+                color: "#000000",
+                border: "1px solid var(--card-border)",
+                borderRadius: "12px",
+                padding: "12px",
+                fontWeight: "700",
+                fontSize: "14px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px"
+              }}
+            >
+              Manage Product
+            </button>
+          )}
+        </div>
       </div>
 
       {showReviewForm && isBuyer && (

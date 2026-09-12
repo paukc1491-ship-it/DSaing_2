@@ -270,10 +270,14 @@ export default function AddProduct() {
                 {t('product.stock')}
               </label>
               <input
-                type="number"
-                min="0"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={productStock}
-                onChange={(e) => setProductStock(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, '');
+                  setProductStock(val);
+                }}
                 placeholder="e.g., 100"
                 required
                 style={{
