@@ -9,9 +9,8 @@ import { signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { 
-  X, User, ShoppingBag, Settings, HelpCircle, LogOut, UserPlus, LogIn, 
-  Camera, MessageCircle, Store, ShoppingCart, Shield, ShieldCheck, 
-  CreditCard, Users, Package, TrendingUp, Bell, Star, FileText, Activity 
+  X, Settings, HelpCircle, LogOut, UserPlus, LogIn, Camera, 
+  Store, ShoppingCart, ShieldCheck 
 } from "lucide-react";
 
 interface SidebarProps {
@@ -19,7 +18,7 @@ interface SidebarProps {
   setIsSidebarOpen: (value: boolean) => void;
   user?: any;
   userRole?: 'user' | 'seller' | 'admin' | null; // ✅ admin ထည့်ပါ
-}
+}                                                                                                                                                               
 
 export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, user, userRole }: SidebarProps) {
   const router = useRouter();
@@ -30,17 +29,28 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, user, userRol
 
   useEffect(() => {
   const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    console.log('🔵 [Sidebar] onAuthStateChanged fired');
+    console.log('🔵 [Sidebar] firebaseUser:', firebaseUser?.uid);
+    
     if (firebaseUser) {
       const userRef = doc(db, 'users', firebaseUser.uid);
       const snapshot = await getDoc(userRef);
+      console.log('🔵 [Sidebar] snapshot.exists:', snapshot.exists());
+      
       if (snapshot.exists()) {
         const data = snapshot.data();
+        console.log('🔵 [Sidebar] data:', data);
+        console.log('🔵 [Sidebar] data.role:', data.role);
+        
         setUsername(data.username || data.displayName || firebaseUser.email?.split('@')[0] || 'User');
         setPhotoURL(data.photoURL || null);
         setLanguage(data.language || 'en');
         setCurrentRole(data.role || 'user');
+        
+        console.log('🔵 [Sidebar] currentRole set to:', data.role || 'user');
       }
     } else {
+      console.log('🔵 [Sidebar] No user');
       setUsername('');
       setPhotoURL(null);
       setCurrentRole(null);
@@ -127,6 +137,8 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, user, userRol
     if (currentRole === 'user') return 'var(--accent)';
     return 'var(--text-muted)';
   };
+
+  console.log('🔵 [Sidebar] Rendering with currentRole:', currentRole);
 
   return (
     <>
@@ -396,296 +408,29 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, user, userRol
                     <span>{t('Messages')}</span>
                   </Link>
 
-                  {/* Admin များအတွက် */}
                   {currentRole === 'admin' && (
-                    <>
-                      {/* Admin Panel Links */}
-                      <Link
-                        href="/admin/banners"
-                        onClick={() => setIsSidebarOpen(false)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "10px",
-                          padding: "8px 12px",
-                          backgroundColor: "var(--accent)",
-                          border: "none",
-                          borderRadius: "8px",
-                          color: "#000000",
-                          textDecoration: "none",
-                          fontSize: "13px",
-                          fontWeight: "600",
-                          width: "100%",
-                          marginTop: "4px"
-                        }}
-                      >
-                        <ShieldCheck size={18} />
-                        <span>{t('sidebar.manageBanners')}</span>
-                      </Link>
-
-                      <Link 
-                        href="/admin/payments" 
-                        onClick={() => setIsSidebarOpen(false)}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '10px', 
-                          padding: '8px 12px', 
-                          backgroundColor: '#10B981',
-                          color: '#FFFFFF',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          textDecoration: 'none',
-                          marginTop: '4px'
-                        }}
-                      >
-                        <CreditCard size={18} />
-                        <span>{t('sidebar.paymentApprovals')}</span>
-                      </Link>
-
-                      <Link 
-                        href="/admin/sellers" 
-                        onClick={() => setIsSidebarOpen(false)}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '10px', 
-                          padding: '8px 12px', 
-                          backgroundColor: '#F59E0B',
-                          color: '#FFFFFF',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          textDecoration: 'none',
-                          marginTop: '4px'
-                        }}
-                      >
-                        <Store size={18} />
-                        <span>Seller Management</span>
-                      </Link>
-
-                      <Link 
-                        href="/admin/products" 
-                        onClick={() => setIsSidebarOpen(false)}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '10px', 
-                          padding: '8px 12px', 
-                          backgroundColor: '#8B5CF6',
-                          color: '#FFFFFF',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          textDecoration: 'none',
-                          marginTop: '4px'
-                        }}
-                      >
-                        <Package size={18} />
-                        <span>Product Moderation</span>
-                      </Link>
-
-                      {/* အသစ်ထည့်တဲ့ ၁၀ ခု */}
-                      <Link 
-                        href="/admin/users" 
-                        onClick={() => setIsSidebarOpen(false)}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '10px', 
-                          padding: '8px 12px', 
-                          backgroundColor: 'var(--card-background)',
-                          color: 'var(--foreground)',
-                          border: '1px solid var(--card-border)',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          textDecoration: 'none',
-                          marginTop: '4px'
-                        }}
-                      >
-                        <Users size={18} />
-                        <span>👥 User Management</span>
-                      </Link>
-
-                      <Link 
-                        href="/admin/orders" 
-                        onClick={() => setIsSidebarOpen(false)}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '10px', 
-                          padding: '8px 12px', 
-                          backgroundColor: 'var(--card-background)',
-                          color: 'var(--foreground)',
-                          border: '1px solid var(--card-border)',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          textDecoration: 'none',
-                          marginTop: '4px'
-                        }}
-                      >
-                        <ShoppingCart size={18} />
-                        <span>📦 Order Management</span>
-                      </Link>
-
-                      <Link 
-                        href="/admin/reports" 
-                        onClick={() => setIsSidebarOpen(false)}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '10px', 
-                          padding: '8px 12px', 
-                          backgroundColor: 'var(--card-background)',
-                          color: 'var(--foreground)',
-                          border: '1px solid var(--card-border)',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          textDecoration: 'none',
-                          marginTop: '4px'
-                        }}
-                      >
-                        <TrendingUp size={18} />
-                        <span>📊 Reports</span>
-                      </Link>
-
-                      <Link 
-                        href="/admin/categories" 
-                        onClick={() => setIsSidebarOpen(false)}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '10px', 
-                          padding: '8px 12px', 
-                          backgroundColor: 'var(--card-background)',
-                          color: 'var(--foreground)',
-                          border: '1px solid var(--card-border)',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          textDecoration: 'none',
-                          marginTop: '4px'
-                        }}
-                      >
-                        <Package size={18} />
-                        <span>📂 Categories</span>
-                      </Link>
-
-                      <Link 
-                        href="/admin/notifications" 
-                        onClick={() => setIsSidebarOpen(false)}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '10px', 
-                          padding: '8px 12px', 
-                          backgroundColor: 'var(--card-background)',
-                          color: 'var(--foreground)',
-                          border: '1px solid var(--card-border)',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          textDecoration: 'none',
-                          marginTop: '4px'
-                        }}
-                      >
-                        <Bell size={18} />
-                        <span>📢 Notifications</span>
-                      </Link>
-
-                      <Link 
-                        href="/admin/reviews" 
-                        onClick={() => setIsSidebarOpen(false)}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '10px', 
-                          padding: '8px 12px', 
-                          backgroundColor: 'var(--card-background)',
-                          color: 'var(--foreground)',
-                          border: '1px solid var(--card-border)',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          textDecoration: 'none',
-                          marginTop: '4px'
-                        }}
-                      >
-                        <Star size={18} />
-                        <span>⭐ Reviews</span>
-                      </Link>
-
-                      <Link 
-                        href="/admin/support" 
-                        onClick={() => setIsSidebarOpen(false)}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '10px', 
-                          padding: '8px 12px', 
-                          backgroundColor: 'var(--card-background)',
-                          color: 'var(--foreground)',
-                          border: '1px solid var(--card-border)',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          textDecoration: 'none',
-                          marginTop: '4px'
-                        }}
-                      >
-                        <MessageCircle size={18} />
-                        <span>🎫 Support</span>
-                      </Link>
-
-                      <Link 
-                        href="/admin/content" 
-                        onClick={() => setIsSidebarOpen(false)}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '10px', 
-                          padding: '8px 12px', 
-                          backgroundColor: 'var(--card-background)',
-                          color: 'var(--foreground)',
-                          border: '1px solid var(--card-border)',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          textDecoration: 'none',
-                          marginTop: '4px'
-                        }}
-                      >
-                        <FileText size={18} />
-                        <span>📝 Content</span>
-                      </Link>
-
-                      <Link 
-                        href="/admin/activity" 
-                        onClick={() => setIsSidebarOpen(false)}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '10px', 
-                          padding: '8px 12px', 
-                          backgroundColor: 'var(--card-background)',
-                          color: 'var(--foreground)',
-                          border: '1px solid var(--card-border)',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          textDecoration: 'none',
-                          marginTop: '4px'
-                        }}
-                      >
-                        <Activity size={18} />
-                        <span>📋 Activity Log</span>
-                      </Link>
-                    </>
-                  )}
+                    <Link
+                      href="/admin"
+                      onClick={() => setIsSidebarOpen(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '10px 12px',
+                        backgroundColor: '#ef4444',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: '700',
+                        textDecoration: 'none',
+                        marginTop: '8px',
+                      }}
+                    >
+                      <ShieldCheck size={18} />
+                      <span>🛡️ Admin Panel</span>
+                    </Link>
+                  )}                                  
                 </div>
               </>
             ) : (

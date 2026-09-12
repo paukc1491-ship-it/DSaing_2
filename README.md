@@ -5,7 +5,9 @@ Digital Shop
 DSAING/
 .
 [4.0K]  .
-├── [3.9K]  README.md
+├── [ 678]  AGENTS.md
+├── [  11]  CLAUDE.md
+├── [4.0K]  README.md
 ├── [ 114]  cors.json
 ├── [4.0K]  dataconnect
 │   ├── [ 456]  dataconnect.yaml
@@ -23,7 +25,7 @@ DSAING/
 ├── [361K]  package-lock.json
 ├── [ 801]  package.json
 ├── [4.0K]  public
-│   ├── [4.4K]  firebase-messaging-sw.js
+│   ├── [6.0K]  firebase-messaging-sw.js
 │   ├── [4.0K]  icons
 │   │   ├── [ 11K]  app-icon.svg
 │   │   ├── [ 32K]  icon-192x192.png
@@ -43,7 +45,7 @@ DSAING/
 │   │   ├── [6.6K]  layout.tsx
 │   │   └── [ 17K]  page.tsx
 │   ├── [4.0K]  components
-│   │   ├── [5.5K]  BannerSlider.tsx
+│   │   ├── [5.6K]  BannerSlider.tsx
 │   │   ├── [ 11K]  CartSidebar.tsx
 │   │   ├── [ 13K]  CategoryAds.tsx
 │   │   ├── [8.7K]  ChatList.tsx
@@ -57,14 +59,14 @@ DSAING/
 │   │   ├── [ 28K]  MessageBubble.tsx
 │   │   ├── [2.4K]  NotificationProvider.tsx
 │   │   ├── [4.8K]  NotificationToggle.tsx
-│   │   ├── [ 15K]  PaymentSubmission.tsx
+│   │   ├── [ 21K]  PaymentSubmission.tsx
 │   │   ├── [7.1K]  ProductAnalyticsModal.tsx
 │   │   ├── [ 18K]  ProductDetailModal.tsx
 │   │   ├── [7.5K]  ReviewForm.tsx
 │   │   ├── [5.4K]  ReviewsList.tsx
 │   │   ├── [5.5K]  SearchResults.tsx
 │   │   ├── [4.1K]  SessionLockModal.tsx
-│   │   ├── [ 20K]  Sidebar.tsx
+│   │   ├── [ 21K]  Sidebar.tsx
 │   │   ├── [4.0K]  SplashScreen.tsx
 │   │   ├── [3.5K]  StarRating.tsx
 │   │   ├── [1007]  ThemeProvider.tsx
@@ -76,7 +78,7 @@ DSAING/
 │   │   └── [3.7K]  WishlistContext.tsx
 │   ├── [4.0K]  data
 │   │   ├── [5.8K]  Ads.ts
-│   │   ├── [3.9K]  banners.ts
+│   │   ├── [2.6K]  banners.ts
 │   │   ├── [ 193]  categories.ts
 │   │   ├── [4.5K]  categoryAds.ts
 │   │   └── [ 31K]  cities.ts
@@ -94,6 +96,7 @@ DSAING/
 │   │   ├── [ 19K]  chat.ts
 │   │   ├── [ 710]  cloudinary.ts
 │   │   ├── [6.1K]  firebase.ts
+│   │   ├── [ 827]  firebaseAdmin.ts
 │   │   └── [ 12K]  translations.ts
 │   ├── [ 221]  next-env.d.ts
 │   ├── [4.0K]  styles
@@ -103,4 +106,4 @@ DSAING/
 ├── [ 735]  tsconfig.json
 └── [148K]  tsconfig.tsbuildinfo
 
-18 directories, 80 files
+18 directories, 83 files

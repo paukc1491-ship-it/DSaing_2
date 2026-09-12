@@ -440,7 +440,6 @@ export default function AdminBannersPage() {
         }}
       >
         <ArrowLeft size={20} />
-        Back to Home
       </button>
 
       <h1>Admin Banner Management</h1>
