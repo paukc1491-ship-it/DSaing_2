@@ -1,13 +1,14 @@
 // components/Sidebar.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { auth, db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 import { 
   X, Settings, HelpCircle, LogOut, UserPlus, LogIn, Camera, 
   Store, ShoppingCart, ShieldCheck 
@@ -27,6 +28,36 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, user, userRol
   const [language, setLanguage] = useState<string>('en');
   const [currentRole, setCurrentRole] = useState<'user' | 'seller' | 'admin' | null>(userRole || null); // ✅ admin ထည့်ပါ
 
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const avatarCameraRef = useRef<HTMLInputElement>(null);
+
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image must be less than 5MB');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      await updateDoc(doc(db, 'users', user.uid), {
+        photoURL: url
+      });
+      setPhotoURL(url);
+      alert('✅ Profile photo updated!');
+    } catch (err) {
+      console.error(err);
+      alert('❌ Upload failed');
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+      if (avatarCameraRef.current) avatarCameraRef.current.value = '';
+    }
+  };
   useEffect(() => {
   const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
     console.log('🔵 [Sidebar] onAuthStateChanged fired');
@@ -562,7 +593,7 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, user, userRol
               <span>{t('sidebar.logout')}</span>
             </button>
           </div>
-        )}
+        )}        
       </aside>
     </>
   );
